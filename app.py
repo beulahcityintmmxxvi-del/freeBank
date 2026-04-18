@@ -213,10 +213,13 @@ def init_db():
         db.create_all()
     print("Database initialized.")
 
-if __name__ == "__main__":
-    
+with app.app_context():
+    db.create_all()
+
     if os.getenv("SEED_DEMO_DATA", "false").lower() == "true":
         seed_demo_data()
 
+
+if __name__ == "__main__":
     debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
     app.run(debug=debug_mode)
