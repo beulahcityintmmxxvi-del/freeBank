@@ -14,7 +14,7 @@ from reportlab.pdfgen import canvas
 
 from extensions import db
 from forms import LoginForm
-from models import Transaction, Notification, User, Account, Transaction
+from models import Transaction, Notification, User, Account
 
 main_bp = Blueprint("main", __name__)
 
@@ -355,21 +355,20 @@ def notifications():
     # ✅ Total transferred (debits only)
     total_transferred = db.session.query(
         func.sum(Transaction.amount_cents)
-    ).join(Account).filter(
+    ).join(Account, Transaction.account_id == Account.id).filter(
         Account.user_id == current_user.id,
         Transaction.tx_type == "debit"
     ).scalar() or 0
 
     return render_template(
-        "notification.html",
-        notifications=notifications,
-        unread_count=unread_count,
-        security_count=security_count,
-        transfer_count=transfer_count,
-        account_count=account_count,
-        total_transferred=total_transferred,
-    )
-
+    "notification.html",
+    notifications=notifications,
+    unread_count=unread_count,
+    security_count=security_count,
+    transfer_count=transfer_count,
+    account_count=account_count,
+    total_transferred=total_transferred,
+)
 
     unread_count = sum(1 for n in notes if not n.is_read)
     security_count = sum(1 for n in notes if n.category == "security")
