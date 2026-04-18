@@ -352,9 +352,9 @@ def notifications():
         category="account"
     ).count()
 
-    # ✅ Total transferred (debits only)
+    
     total_transferred = db.session.query(
-        func.sum(Transaction.amount_cents)
+        func.count(Transaction.id)
     ).join(Account, Transaction.account_id == Account.id).filter(
         Account.user_id == current_user.id,
         Transaction.tx_type == "debit"
