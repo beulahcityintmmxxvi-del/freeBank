@@ -361,7 +361,7 @@ def notifications():
     ).scalar() or 0
 
     return render_template(
-    "notification.html",
+    "notifications.html",
     notifications=notifications,
     unread_count=unread_count,
     security_count=security_count,
