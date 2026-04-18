@@ -10,8 +10,8 @@ from extensions import limiter, mail, db
 from models import User, Account
 from forms import RegisterForm, LoginForm, ResetRequestForm, ResetPasswordForm
 
-auth_bp = Blueprint("auth", __name__)
 
+auth_bp = Blueprint("auth", __name__)
 
 def unique_customer_id():
     while True:
@@ -38,12 +38,16 @@ def verify_token(token, salt, max_age=3600):
 
 
 def send_email(subject, recipient, body):
+    """
+    Production-safe email sender:
+    - Falls back to console logging if SMTP fails
+    """
     try:
         msg = Message(subject=subject, recipients=[recipient], body=body)
         mail.send(msg)
-    except Exception:
-        print(f"\n--- EMAIL TO {recipient} ---\n{subject}\n{body}\n")
-
+    except Exception as e:
+        current_app.logger.warning(f"Email failed: {e}")
+        print(f"\n--- EMAIL FALLBACK ---\nTo: {recipient}\n{subject}\n{body}\n")
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 @limiter.limit("3 per minute")
@@ -57,7 +61,7 @@ def register():
 
         if User.query.filter_by(email=email).first():
             flash("An account with that email already exists.", "warning")
-            return render_template("register.html", form=form)
+            return redirect(url_for("auth.register"))
 
         user = User(
             customer_id=unique_customer_id(),
@@ -66,6 +70,7 @@ def register():
             password_hash=generate_password_hash(password),
             email_verified=False
         )
+
         db.session.add(user)
         db.session.flush()
 
@@ -75,6 +80,7 @@ def register():
             account_number=unique_account_number(),
             balance_cents=0
         )
+
         db.session.add(account)
         db.session.commit()
 
@@ -84,19 +90,28 @@ def register():
         send_email(
             "Verify your email",
             email,
-            f"Welcome to Northstar Bank!\n\n"
-            f"Your User ID is: {user.customer_id}\n\n"
-            f"Verify your email here:\n{verify_link}\n\n"
-            f"This link expires in 1 hour."
+            f"""Welcome to Northstar Bank!
+
+Your User ID is: {user.customer_id}
+
+Verify your email:
+{verify_link}
+
+This link expires in 1 hour."""
         )
 
-        flash(f"Account created successfully. Your User ID is {user.customer_id}. Check your email to verify your account.", "success")
+        flash(
+            f"Account created successfully. Your User ID is {user.customer_id}. "
+            "Check your email to verify your account.",
+            "success"
+        )
         return redirect(url_for("main.home"))
 
     return render_template("register.html", form=form)
 
 
-@auth_bp.route("/login", methods=["POST"])
+
+@auth_bp.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def login():
     form = LoginForm()
@@ -107,20 +122,23 @@ def login():
 
         user = User.query.filter_by(customer_id=user_id).first()
 
+        
         if not user or not check_password_hash(user.password_hash, password):
             flash("Invalid User ID or password.", "danger")
-            return redirect(url_for("main.home"))
+            return redirect(url_for("auth.login"))
 
+        
         if not user.email_verified:
             flash("Please verify your email before logging in.", "warning")
-            return redirect(url_for("main.home"))
+            return redirect(url_for("auth.login"))
 
         login_user(user, remember=form.remember.data)
+
         flash("Welcome back.", "success")
         return redirect(url_for("main.dashboard"))
 
-    flash("Invalid login request.", "danger")
-    return redirect(url_for("main.home"))
+    return render_template("login.html", form=form)
+
 
 
 @auth_bp.route("/logout")
@@ -131,27 +149,30 @@ def logout():
     return redirect(url_for("main.home"))
 
 
+
 @auth_bp.route("/verify-email/<token>")
 def verify_email(token):
     try:
         email = verify_token(token, "email-verify", max_age=3600)
     except SignatureExpired:
         flash("Verification link expired. Please request a new one.", "warning")
-        return redirect(url_for("main.home"))
+        return redirect(url_for("auth.login"))
     except BadSignature:
         flash("Invalid verification link.", "danger")
-        return redirect(url_for("main.home"))
+        return redirect(url_for("auth.login"))
 
     user = User.query.filter_by(email=email).first()
+
     if not user:
         flash("Account not found.", "danger")
-        return redirect(url_for("main.home"))
+        return redirect(url_for("auth.login"))
 
     user.email_verified = True
     db.session.commit()
 
     flash("Email verified successfully. You can now log in.", "success")
-    return redirect(url_for("main.home"))
+    return redirect(url_for("auth.login"))
+
 
 
 @auth_bp.route("/resend-verification", methods=["POST"])
@@ -167,14 +188,12 @@ def resend_verification():
         send_email(
             "Verify your email",
             email,
-            f"Verify your email here:\n{verify_link}\n\nThis link expires in 1 hour."
+            f"Verify your email here:\n{verify_link}\n\nExpires in 1 hour."
         )
 
-        flash("Verification email sent.", "success")
-    else:
-        flash("If the email exists and is unverified, a verification email will be sent.", "info")
+    flash("If the email exists, a verification link has been sent.", "info")
+    return redirect(url_for("auth.login"))
 
-    return redirect(url_for("main.home"))
 
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
@@ -193,13 +212,14 @@ def forgot_password():
             send_email(
                 "Reset your password",
                 email,
-                f"Reset your password here:\n{reset_link}\n\nThis link expires in 1 hour."
+                f"Reset your password:\n{reset_link}\n\nExpires in 1 hour."
             )
 
         flash("If the email exists, a reset link has been sent.", "info")
-        return redirect(url_for("main.home"))
+        return redirect(url_for("auth.login"))
 
     return render_template("forgot_password.html", form=form)
+
 
 
 @auth_bp.route("/reset-password/<token>", methods=["GET", "POST"])
@@ -216,6 +236,7 @@ def reset_password(token):
         return redirect(url_for("auth.forgot_password"))
 
     user = User.query.filter_by(email=email).first()
+
     if not user:
         flash("Account not found.", "danger")
         return redirect(url_for("auth.forgot_password"))
@@ -223,7 +244,8 @@ def reset_password(token):
     if form.validate_on_submit():
         user.password_hash = generate_password_hash(form.password.data)
         db.session.commit()
-        flash("Password reset successfully. You can now log in.", "success")
-        return redirect(url_for("main.home"))
+
+        flash("Password reset successful. You can now log in.", "success")
+        return redirect(url_for("auth.login"))
 
     return render_template("reset_password.html", form=form)
