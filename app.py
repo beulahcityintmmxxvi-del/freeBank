@@ -94,6 +94,38 @@ def unique_account_number():
         acc = f"{random.randint(1000000000, 9999999999)}"
         if not Account.query.filter_by(account_number=acc).first():
             return acc
+        
+def random_receiver_name():
+    first_names = [
+        "Michael", "Sarah", "David", "Emma", "James",
+        "Olivia", "Daniel", "Sophia", "Robert", "Isabella",
+        "William", "Mia", "Alexander", "Charlotte", "Benjamin"
+    ]
+
+    last_names = [
+        "Johnson", "Smith", "Williams", "Brown", "Taylor",
+        "Anderson", "Thomas", "Moore", "Martin", "Jackson",
+        "White", "Harris", "Clark", "Lewis", "Walker"
+    ]
+
+    businesses = [
+        "Global Holdings Ltd.",
+        "Apex Capital Group",
+        "Bluewave Logistics",
+        "Summit Investments",
+        "Evergreen Enterprises",
+        "Vertex Solutions",
+        "Prime Equity Partners",
+        "Orion Industrial Co.",
+        "Pioneer Ventures",
+        "Sterling Consulting"
+    ]
+
+    # 50% chance business, 50% personal
+    if random.choice([True, False]):
+        return random.choice(businesses)
+    else:
+        return f"{random.choice(first_names)} {random.choice(last_names)}"
 
 
 def seed_demo_data():
@@ -184,7 +216,7 @@ def seed_demo_data():
                 account_id=account.id,
                 amount_cents=t["amount"],
                 tx_type=t["type"],  # ✅ matches model
-                receiver="Demo Counterparty",
+                receiver=random_receiver_name(),
                 purpose=t["desc"],  # ✅ use purpose instead of description
                 status="completed",
                 created_at=random_date(start, today),
