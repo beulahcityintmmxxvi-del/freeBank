@@ -7,14 +7,14 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session, send_file
 from flask_login import login_required, current_user
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from werkzeug.security import generate_password_hash, check_password_hash
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 from extensions import db
 from forms import LoginForm
-from models import Transaction, Notification, User
+from models import Transaction, Notification, User, Account, Transaction
 
 main_bp = Blueprint("main", __name__)
 
@@ -327,12 +327,49 @@ def receipt(tx_id):
 @main_bp.route("/notifications")
 @login_required
 def notifications():
-    notes = (
-        Notification.query
-        .filter_by(user_id=current_user.id)
-        .order_by(Notification.created_at.desc())
-        .all()
+
+    notifications = Notification.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Notification.created_at.desc()).all()
+
+    unread_count = Notification.query.filter_by(
+        user_id=current_user.id,
+        is_read=False
+    ).count()
+
+    security_count = Notification.query.filter_by(
+        user_id=current_user.id,
+        category="security"
+    ).count()
+
+    transfer_count = Notification.query.filter_by(
+        user_id=current_user.id,
+        category="transfer"
+    ).count()
+
+    account_count = Notification.query.filter_by(
+        user_id=current_user.id,
+        category="account"
+    ).count()
+
+    # ✅ Total transferred (debits only)
+    total_transferred = db.session.query(
+        func.sum(Transaction.amount_cents)
+    ).join(Account).filter(
+        Account.user_id == current_user.id,
+        Transaction.tx_type == "debit"
+    ).scalar() or 0
+
+    return render_template(
+        "notification.html",
+        notifications=notifications,
+        unread_count=unread_count,
+        security_count=security_count,
+        transfer_count=transfer_count,
+        account_count=account_count,
+        total_transferred=total_transferred,
     )
+
 
     unread_count = sum(1 for n in notes if not n.is_read)
     security_count = sum(1 for n in notes if n.category == "security")

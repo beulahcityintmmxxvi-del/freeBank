@@ -7,7 +7,7 @@
 {% block content %}
 <div class="notif-shell">
 
-  <!-- Hero -->
+  
   <section class="notif-hero">
     <div class="notif-hero-copy">
       <div class="eyebrow">
@@ -47,7 +47,7 @@
       </div>
       <div class="summary-card">
         <span>Transfers</span>
-        <strong>{{ transfer_count }}</strong>
+        <strong>${{ "{:,.2f}".format(total_transferred / 100) }}</strong>
       </div>
       <div class="summary-card">
         <span>Account</span>
@@ -56,7 +56,7 @@
     </div>
   </section>
 
-  <!-- Notification List -->
+  
   <section class="panel notif-panel">
     <div class="panel-header">
       <div>

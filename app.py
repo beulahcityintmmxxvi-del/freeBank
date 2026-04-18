@@ -127,7 +127,85 @@ def random_receiver_name():
     else:
         return f"{random.choice(first_names)} {random.choice(last_names)}"
 
+def seed_notifications(user):
+    categories = ["security", "transfer", "account"]
 
+    titles = {
+        "security": [
+            "New login detected",
+            "Password updated successfully",
+            "Two-factor authentication enabled",
+            "Security settings changed",
+            "New device authorized",
+        ],
+        "transfer": [
+            "Transfer completed",
+            "Outgoing transfer processed",
+            "Incoming transfer received",
+            "Wire transfer successful",
+            "Funds deposited",
+        ],
+        "account": [
+            "Profile updated",
+            "Account details modified",
+            "Statement available",
+            "Contact information changed",
+            "Account settings updated",
+        ],
+    }
+
+    messages = {
+        "security": "We detected a recent security-related action on your account.",
+        "transfer": "A transfer has been processed on your account.",
+        "account": "Your account information was recently updated.",
+    }
+
+    for _ in range(15):
+        category = random.choice(categories)
+
+        note = Notification(
+            user_id=user.id,
+            category=category,
+            title=random.choice(titles[category]),
+            message=messages[category],
+            is_read=random.choice([True, False]),
+            created_at=datetime.utcnow() - timedelta(days=random.randint(0, 30)),
+        )
+
+        db.session.add(note)
+        
+def seed_transaction_notifications(user, account):
+    transactions = Transaction.query.filter_by(
+        account_id=account.id
+    ).all()
+
+    for tx in transactions:
+        if tx.tx_type == "debit":
+            title = "Outgoing transfer completed"
+            message = (
+                f"${tx.amount_cents / 100:,.2f} was sent to {tx.receiver}. "
+                f"Purpose: {tx.purpose}."
+            )
+            category = "transfer"
+        else:
+            title = "Incoming funds received"
+            message = (
+                f"${tx.amount_cents / 100:,.2f} was received from {tx.receiver}. "
+                f"Purpose: {tx.purpose}."
+            )
+            category = "transfer"
+
+        note = Notification(
+            user_id=user.id,
+            category=category,
+            title=title,
+            message=message,
+            is_read=random.choice([True, False]),
+            created_at=tx.created_at  # ✅ Match transaction date
+        )
+
+        db.session.add(note) 
+        
 def seed_demo_data():
     with app.app_context():
         db.create_all()
@@ -239,7 +317,11 @@ def seed_demo_data():
             
             
         account.balance_cents = calculated_balance
-
+        
+        Notification.query.filter_by(user_id=user.id).delete()
+        seed_notifications(user)
+        seed_transaction_notifications(user, account)
+        
         db.session.commit()
 
 @app.cli.command("init-db")
