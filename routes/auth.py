@@ -117,27 +117,30 @@ def login():
     form = LoginForm()
 
     if form.validate_on_submit():
-        user_id = form.user_id.data.strip().upper()
+        user_id = form.user_id.data.strip()
         password = form.password.data
 
+        print("LOGIN ATTEMPT:", user_id)
+
         user = User.query.filter_by(customer_id=user_id).first()
+
+        print("USER FOUND:", user)
+
+        if not user:
+            print("No user found in DB")
+
+        if user:
+            print("Stored hash:", user.password_hash)
+            print("Password matches:", check_password_hash(user.password_hash, password))
 
         if not user or not check_password_hash(user.password_hash, password):
             flash("Invalid User ID or password.", "danger")
             return redirect(url_for("auth.login"))
 
-        if not user.email_verified:
-            flash("Please verify your email before logging in.", "warning")
-            return redirect(url_for("auth.login"))
-
         login_user(user, remember=form.remember.data)
-
-        flash("Welcome back.", "success")
         return redirect(url_for("main.dashboard"))
 
-    
     return render_template("home.html", login_form=form)
-
 
 
 @auth_bp.route("/logout")

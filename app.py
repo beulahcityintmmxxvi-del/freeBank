@@ -100,7 +100,7 @@ def seed_demo_data():
     with app.app_context():
         db.create_all()
 
-        demo_customer_id = "Williams850"
+        demo_customer_id = "WILLIAMS850"
         demo_email = "sewilliams850@gmail.com"
         demo_full_name = "Joshua A. Perez"
         demo_password = "sewilly223"
