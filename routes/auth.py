@@ -76,7 +76,7 @@ def register():
 
         account = Account(
             user_id=user.id,
-            bank_name="Northstar Bank",
+            bank_name="Bank of America",
             account_number=unique_account_number(),
             balance_cents=0
         )
@@ -90,7 +90,7 @@ def register():
         send_email(
             "Verify your email",
             email,
-            f"""Welcome to Northstar Bank!
+            f"""Welcome to Bank of America!
 
 Your User ID is: {user.customer_id}
 
