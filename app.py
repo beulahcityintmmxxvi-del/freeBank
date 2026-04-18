@@ -16,6 +16,7 @@ from routes.main import main_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
+app.secret_key = os.urandom(24)
 
 
 app.config["RATELIMIT_STORAGE_URI"] = app.config.get(
@@ -23,6 +24,10 @@ app.config["RATELIMIT_STORAGE_URI"] = app.config.get(
     "memory://"
 )
 
+app.config.update(
+    SESSION_COOKIE_SAMESITE="None",
+    SESSION_COOKIE_SECURE=True
+)
 
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
