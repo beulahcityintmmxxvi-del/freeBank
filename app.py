@@ -143,7 +143,7 @@ def seed_demo_data():
 
             account = Account(
                 user_id=user.id,
-                bank_name="Demo Educational Bank",
+                bank_name="Bank of America",
                 account_number=demo_account_number,
                 balance_cents=0
             )
