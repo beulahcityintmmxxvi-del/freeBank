@@ -84,14 +84,14 @@ def random_date(start, end):
 
 def unique_customer_id():
     while True:
-        cid = f"NS-DEMO-{random.randint(100000, 999999)}"
+        cid = {random.randint(100000, 999999)}
         if not User.query.filter_by(customer_id=cid).first():
             return cid
 
 
 def unique_account_number():
     while True:
-        acc = f"AC-DEMO-{random.randint(1000000000, 9999999999)}"
+        acc = {random.randint(1000000000, 9999999999)}
         if not Account.query.filter_by(account_number=acc).first():
             return acc
 
@@ -100,12 +100,12 @@ def seed_demo_data():
     with app.app_context():
         db.create_all()
 
-        demo_customer_id = "BAS-UB-784512"
+        demo_customer_id = "Williams850"
         demo_email = "sewilliams850@gmail.com"
         demo_full_name = "Joshua A. Perez"
         demo_password = "sewilly223"
-        demo_account_number = "AC-BOA-241908"
-        starting_balance_cents = 128400000
+        demo_account_number = "233082285387"
+        starting_balance_cents = 1284000
 
         today = datetime.utcnow()
         start = datetime(today.year, 2, 1)
