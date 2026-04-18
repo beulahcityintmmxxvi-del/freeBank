@@ -183,7 +183,7 @@ def seed_demo_data():
             tx = Transaction(
                 account_id=account.id,
                 amount_cents=t["amount"],
-                transaction_type=t["type"],
+                tx_type =t["type"],
                 description=t["desc"],
                 created_at=random_date(start, today),
             )
