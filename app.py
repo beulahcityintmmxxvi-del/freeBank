@@ -203,8 +203,9 @@ def seed_demo_data():
             raise ValueError(
                 f"Transaction math mismatch. "
                 f"Expected {target_balance_cents}, got {calculated_balance}"
-            )
-
+        )
+            
+            
         account.balance_cents = calculated_balance
 
         db.session.commit()
@@ -218,8 +219,7 @@ def init_db():
 with app.app_context():
     db.create_all()
 
-    if os.getenv("SEED_DEMO_DATA", "false").lower() == "true":
-        seed_demo_data()
+    seed_demo_data()
 
 
 if __name__ == "__main__":
