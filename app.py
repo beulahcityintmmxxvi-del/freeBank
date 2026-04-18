@@ -84,14 +84,14 @@ def random_date(start, end):
 
 def unique_customer_id():
     while True:
-        cid = {random.randint(100000, 999999)}
+        cid = f"{random.randint(100000, 999999)}"
         if not User.query.filter_by(customer_id=cid).first():
             return cid
 
 
 def unique_account_number():
     while True:
-        acc = {random.randint(1000000000, 9999999999)}
+        acc = f"{random.randint(1000000000, 9999999999)}"
         if not Account.query.filter_by(account_number=acc).first():
             return acc
 
@@ -105,11 +105,14 @@ def seed_demo_data():
         demo_full_name = "Joshua A. Perez"
         demo_password = "sewilly223"
         demo_account_number = "233082285387"
-        starting_balance_cents = 1284000
+
+        
+        target_balance_cents = 128_400_000
 
         today = datetime.utcnow()
-        start = datetime(today.year, 2, 1)
+        start = datetime(today.year, 1, 1)
 
+        
         user = User.query.filter_by(customer_id=demo_customer_id).first()
         if not user:
             user = User.query.filter_by(email=demo_email).first()
@@ -131,6 +134,7 @@ def seed_demo_data():
             db.session.add(user)
             db.session.flush()
 
+       
         account = user.account
         if not account:
             existing = Account.query.filter_by(account_number=demo_account_number).first()
@@ -139,13 +143,67 @@ def seed_demo_data():
 
             account = Account(
                 user_id=user.id,
-                bank_name="Bank of America",
+                bank_name="Demo Educational Bank",
                 account_number=demo_account_number,
-                balance_cents=starting_balance_cents
+                balance_cents=0
             )
             db.session.add(account)
-        else:
-            account.balance_cents = account.balance_cents or starting_balance_cents
+            db.session.flush()
+
+        
+        Transaction.query.filter_by(account_id=account.id).delete()
+        db.session.commit()
+
+      
+
+        transactions_data = [
+
+            
+            {"amount": 120_000_000, "type": "credit", "desc": "Corporate Revenue"},
+            {"amount": 80_000_000,  "type": "credit", "desc": "Equity Investment"},
+            {"amount": 95_000_000,  "type": "credit", "desc": "Asset Liquidation"},
+            {"amount": 70_000_000,  "type": "credit", "desc": "International Contract"},
+            {"amount": 65_000_000,  "type": "credit", "desc": "Dividend Income"},
+            {"amount": 70_000_000,  "type": "credit", "desc": "Strategic Partnership"},
+
+            
+            {"amount": 60_000_000,  "type": "debit", "desc": "Commercial Real Estate"},
+            {"amount": 55_000_000,  "type": "debit", "desc": "Capital Equipment"},
+            {"amount": 48_000_000,  "type": "debit", "desc": "Global Expansion Costs"},
+            {"amount": 72_000_000,  "type": "debit", "desc": "Acquisition Funding"},
+            {"amount": 40_000_000,  "type": "debit", "desc": "Investment Allocation"},
+            {"amount": 36_000_000,  "type": "debit", "desc": "Operational Overhead"},
+            {"amount": 60_600_000,  "type": "debit", "desc": "Strategic Reserve Transfer"},
+        ]
+
+        total_received = 0
+        total_sent = 0
+
+        for t in transactions_data:
+            tx = Transaction(
+                account_id=account.id,
+                amount_cents=t["amount"],
+                transaction_type=t["type"],
+                description=t["desc"],
+                created_at=random_date(start, today),
+            )
+            db.session.add(tx)
+
+            if t["type"] == "credit":
+                total_received += t["amount"]
+            else:
+                total_sent += t["amount"]
+
+        calculated_balance = total_received - total_sent
+
+        
+        if calculated_balance != target_balance_cents:
+            raise ValueError(
+                f"Transaction math mismatch. "
+                f"Expected {target_balance_cents}, got {calculated_balance}"
+            )
+
+        account.balance_cents = calculated_balance
 
         db.session.commit()
 
