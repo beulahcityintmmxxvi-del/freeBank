@@ -122,12 +122,10 @@ def login():
 
         user = User.query.filter_by(customer_id=user_id).first()
 
-        
         if not user or not check_password_hash(user.password_hash, password):
             flash("Invalid User ID or password.", "danger")
             return redirect(url_for("auth.login"))
 
-        
         if not user.email_verified:
             flash("Please verify your email before logging in.", "warning")
             return redirect(url_for("auth.login"))
@@ -137,6 +135,7 @@ def login():
         flash("Welcome back.", "success")
         return redirect(url_for("main.dashboard"))
 
+    
     return render_template("home.html", login_form=form)
 
 
