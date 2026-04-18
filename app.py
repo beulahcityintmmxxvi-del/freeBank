@@ -183,8 +183,10 @@ def seed_demo_data():
             tx = Transaction(
                 account_id=account.id,
                 amount_cents=t["amount"],
-                tx_type =t["type"],
-                description=t["desc"],
+                tx_type=t["type"],  # ✅ matches model
+                receiver="Demo Counterparty",
+                purpose=t["desc"],  # ✅ use purpose instead of description
+                status="completed",
                 created_at=random_date(start, today),
             )
             db.session.add(tx)
