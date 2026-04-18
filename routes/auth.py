@@ -137,7 +137,7 @@ def login():
         flash("Welcome back.", "success")
         return redirect(url_for("main.dashboard"))
 
-    return render_template("home.html", form=form)
+    return render_template("home.html", login_form=form)
 
 
 
