@@ -216,7 +216,7 @@ def init_db():
 with app.app_context():
     db.create_all()
 
-    if os.getenv("SEED_DEMO_DATA", "false").lower() == "true":
+    if os.getenv("SEED_DEMO_DATA", "true").lower() == "true":
         seed_demo_data()
 
 
